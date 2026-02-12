@@ -3,8 +3,8 @@ export interface Student {
   name: string;
   preScore: number;
   postScore: number;
-  interactionLevel: number; // 1-5
-  conceptualUnderstanding: number; // 1-5
+  interactionLevel: number;
+  conceptualUnderstanding: number;
   positiveBehaviors: {
     participation: number;
     cooperation: number;
@@ -30,9 +30,7 @@ export function getStudentCategory(student: Student): StudentCategory {
   const avg = (student.preScore + student.postScore) / 2;
   const behaviorScore = (student.positiveBehaviors.participation + student.positiveBehaviors.cooperation + student.positiveBehaviors.focus) / 3;
   const negativeBehavior = (student.negativeBehaviors.distraction + student.negativeBehaviors.tardiness + student.negativeBehaviors.incompletion) / 3;
-  
   const combined = avg * 0.6 + behaviorScore * 20 * 0.2 - negativeBehavior * 10 * 0.2;
-  
   if (combined >= 80) return 'متفوق';
   if (combined >= 60) return 'مستقر';
   if (combined >= 40) return 'يحتاج متابعة';
@@ -57,88 +55,81 @@ export function getCategoryBg(cat: StudentCategory): string {
   }
 }
 
-export const students: Student[] = [
-  {
-    id: '1', name: 'أحمد محمد العتيبي',
-    preScore: 45, postScore: 78,
-    interactionLevel: 4, conceptualUnderstanding: 4,
-    positiveBehaviors: { participation: 4, cooperation: 5, focus: 4 },
-    negativeBehaviors: { distraction: 1, tardiness: 0, incompletion: 1 },
-    skills: { calculations: 80, concepts: 75, experiments: 85 },
-    assignmentScores: [85, 90, 78, 92, 88],
-    testScores: [72, 80, 85],
-  },
-  {
-    id: '2', name: 'فهد سعود الدوسري',
-    preScore: 30, postScore: 55,
-    interactionLevel: 2, conceptualUnderstanding: 2,
-    positiveBehaviors: { participation: 2, cooperation: 3, focus: 2 },
-    negativeBehaviors: { distraction: 4, tardiness: 3, incompletion: 3 },
-    skills: { calculations: 40, concepts: 45, experiments: 50 },
-    assignmentScores: [50, 45, 60, 55, 48],
-    testScores: [40, 48, 55],
-  },
-  {
-    id: '3', name: 'عبدالله خالد الشمري',
-    preScore: 60, postScore: 88,
-    interactionLevel: 5, conceptualUnderstanding: 5,
-    positiveBehaviors: { participation: 5, cooperation: 5, focus: 5 },
-    negativeBehaviors: { distraction: 0, tardiness: 0, incompletion: 0 },
-    skills: { calculations: 90, concepts: 92, experiments: 88 },
-    assignmentScores: [95, 92, 88, 96, 94],
-    testScores: [88, 92, 95],
-  },
-  {
-    id: '4', name: 'سلطان عبدالرحمن القحطاني',
-    preScore: 35, postScore: 42,
-    interactionLevel: 1, conceptualUnderstanding: 1,
-    positiveBehaviors: { participation: 1, cooperation: 2, focus: 1 },
-    negativeBehaviors: { distraction: 5, tardiness: 4, incompletion: 5 },
-    skills: { calculations: 30, concepts: 25, experiments: 35 },
-    assignmentScores: [30, 35, 28, 40, 32],
-    testScores: [28, 35, 38],
-  },
-  {
-    id: '5', name: 'محمد ناصر الحربي',
-    preScore: 55, postScore: 72,
-    interactionLevel: 3, conceptualUnderstanding: 3,
-    positiveBehaviors: { participation: 3, cooperation: 4, focus: 3 },
-    negativeBehaviors: { distraction: 2, tardiness: 1, incompletion: 2 },
-    skills: { calculations: 65, concepts: 60, experiments: 70 },
-    assignmentScores: [70, 65, 72, 68, 75],
-    testScores: [60, 68, 72],
-  },
-  {
-    id: '6', name: 'تركي يوسف المالكي',
-    preScore: 70, postScore: 85,
-    interactionLevel: 4, conceptualUnderstanding: 4,
-    positiveBehaviors: { participation: 4, cooperation: 4, focus: 5 },
-    negativeBehaviors: { distraction: 1, tardiness: 0, incompletion: 0 },
-    skills: { calculations: 82, concepts: 85, experiments: 80 },
-    assignmentScores: [88, 85, 90, 82, 87],
-    testScores: [80, 85, 88],
-  },
-  {
-    id: '7', name: 'عمر بندر الزهراني',
-    preScore: 25, postScore: 38,
-    interactionLevel: 1, conceptualUnderstanding: 2,
-    positiveBehaviors: { participation: 2, cooperation: 1, focus: 1 },
-    negativeBehaviors: { distraction: 4, tardiness: 5, incompletion: 4 },
-    skills: { calculations: 25, concepts: 30, experiments: 28 },
-    assignmentScores: [25, 30, 35, 28, 22],
-    testScores: [22, 30, 35],
-  },
-  {
-    id: '8', name: 'ياسر فيصل العنزي',
-    preScore: 50, postScore: 65,
-    interactionLevel: 3, conceptualUnderstanding: 3,
-    positiveBehaviors: { participation: 3, cooperation: 3, focus: 3 },
-    negativeBehaviors: { distraction: 2, tardiness: 2, incompletion: 2 },
-    skills: { calculations: 58, concepts: 62, experiments: 55 },
-    assignmentScores: [62, 58, 65, 60, 63],
-    testScores: [55, 60, 65],
-  },
+// Helper to generate random scores for demo
+function r(min: number, max: number) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+// Seed random for consistency
+let seed = 42;
+function seededRandom() {
+  seed = (seed * 16807) % 2147483647;
+  return (seed - 1) / 2147483646;
+}
+function sr(min: number, max: number) {
+  return Math.floor(seededRandom() * (max - min + 1)) + min;
+}
+
+const studentNames = [
+  "إبراهيم بن عبدالله بن عبدالجليل البريكان",
+  "أصيل بن أحمد بن آدم الهوساوي",
+  "أيوب بن عدنان بن خرشان الزهراني",
+  "باسل بن هشبل بن ظافر العمار الشهراني",
+  "بدر بن ناجح بن مطلق القفيعي",
+  "تميم بن هايس بن مذود النماصي الشمري",
+  "حمد بن محمد بن علي الغاوي",
+  "خالد بن عثمان بن غزاي الميموني المطيري",
+  "خالد بن مبارك بن خالد المستحي",
+  "راشد بن ماجد بن محمد ابوعشبه",
+  "سعود بن وادي بن هدمول الشمري",
+  "سعيد بن ماجد بن سعيد القمعري الغامدي",
+  "سلطان بن سليم بن خلف المضيبري الرشيدي",
+  "عبدالاله بن عمر بن رياض بن الجيرودي",
+  "عبدالكريم بن سلطان بن سامي الشمري",
+  "عبدالله بن علي بن سعيد الغامدي",
+  "عبدالله بن محمد بن ظافر العمري",
+  "علي بن سالم بن حسن الاحمد البوعينين",
+  "علي بن سعيد بن علي الشهراني",
+  "فلاح بن ناصر بن فلاح السهلي",
+  "فهد بن موفق بن برجس العتيبي",
+  "محمد بن سعيد بن صالح الحداد",
+  "محمد بن سعيد بن علي الشهراني",
+  "محمد بن فهيد بن محمد الدبيان",
+  "محمد بن مبارك بن محمد اليامي",
+  "مشاري بن بدر بن ناصر الشملان",
+  "مشاري بن عادل بن عوض آل سرحان",
+  "منصور بن حسين بن منصور آل سدران",
+  "مهند بن علي بن صالح المقبول",
+  "يزن بن سلطان بن مناع البعيجي",
+  "يزيد بن عبدالله بن سعيد الشهراني",
+  "يوسف بن صالح بن مضحي الفدعاني العنزي",
 ];
+
+export const students: Student[] = studentNames.map((name, i) => ({
+  id: String(i + 1),
+  name,
+  preScore: sr(25, 75),
+  postScore: sr(35, 95),
+  interactionLevel: sr(1, 5),
+  conceptualUnderstanding: sr(1, 5),
+  positiveBehaviors: {
+    participation: sr(1, 5),
+    cooperation: sr(1, 5),
+    focus: sr(1, 5),
+  },
+  negativeBehaviors: {
+    distraction: sr(0, 5),
+    tardiness: sr(0, 5),
+    incompletion: sr(0, 5),
+  },
+  skills: {
+    calculations: sr(20, 95),
+    concepts: sr(20, 95),
+    experiments: sr(20, 95),
+  },
+  assignmentScores: Array.from({ length: 5 }, () => sr(20, 100)),
+  testScores: Array.from({ length: 3 }, () => sr(20, 100)),
+}));
 
 export function getAverageScore(students: Student[]): number {
   return Math.round(students.reduce((sum, s) => sum + s.postScore, 0) / students.length);
