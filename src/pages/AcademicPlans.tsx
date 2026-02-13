@@ -1,17 +1,33 @@
-import { students, getStudentCategory, getCategoryColor, getAcademicRecommendations } from "@/data/mockData";
-import { BookOpen, Lightbulb, FlaskConical, Calculator } from "lucide-react";
+import { useStudents } from "@/context/StudentContext";
+import { getStudentCategory, getCategoryColor, getAcademicRecommendations, getBehaviorRecommendations } from "@/data/mockData";
+import { BookOpen, Lightbulb, FlaskConical, Calculator, AlertTriangle, HeartPulse } from "lucide-react";
 
 export default function AcademicPlans() {
-  const needsHelp = students.filter(s => s.postScore < 70 || s.conceptualUnderstanding <= 2);
+  const { students } = useStudents();
+
+  // Students needing academic help
+  const needsAcademicHelp = students.filter(s => s.postScore < 70 || s.conceptualUnderstanding <= 2);
+  
+  // Students needing behavioral help
+  const needsBehavioralHelp = students.filter(s => {
+    const negAvg = (s.negativeBehaviors.distraction + s.negativeBehaviors.tardiness + s.negativeBehaviors.incompletion) / 3;
+    return negAvg >= 2;
+  });
+
+  // Combined: students needing any type of remedial plan
+  const allNeedingHelp = students.filter(s => {
+    const negAvg = (s.negativeBehaviors.distraction + s.negativeBehaviors.tardiness + s.negativeBehaviors.incompletion) / 3;
+    return s.postScore < 70 || s.conceptualUnderstanding <= 2 || negAvg >= 2;
+  });
 
   return (
     <div className="space-y-6">
       <div className="glass-card rounded-xl p-5">
-        <h3 className="text-sm font-semibold text-foreground mb-1">الخطط العلاجية الأكاديمية</h3>
-        <p className="text-xs text-muted-foreground">توصيات أكاديمية مخصصة لكل طالب بناءً على تحليل المهارات</p>
+        <h3 className="text-sm font-semibold text-foreground mb-1">الخطط العلاجية الشاملة</h3>
+        <p className="text-xs text-muted-foreground">توصيات أكاديمية وسلوكية مخصصة — {allNeedingHelp.length} طالب يحتاج خطة علاجية</p>
       </div>
 
-      {/* Quick remedial activities */}
+      {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="glass-card rounded-xl p-5 animate-fade-in">
           <Calculator className="w-8 h-8 text-primary mb-3" />
@@ -45,13 +61,17 @@ export default function AcademicPlans() {
         </div>
       </div>
 
-      {/* Per student plans */}
+      {/* Per student comprehensive plans */}
       <div className="space-y-4">
-        {needsHelp.map(s => {
+        {allNeedingHelp.map(s => {
           const cat = getStudentCategory(s);
-          const recs = getAcademicRecommendations(s);
+          const academicRecs = getAcademicRecommendations(s);
+          const behaviorRecs = getBehaviorRecommendations(s);
           const weakSkill = Object.entries(s.skills).sort(([, a], [, b]) => a - b)[0];
           const weakName = weakSkill[0] === "calculations" ? "الحسابات" : weakSkill[0] === "concepts" ? "المفاهيم" : "التجارب";
+          const negAvg = (s.negativeBehaviors.distraction + s.negativeBehaviors.tardiness + s.negativeBehaviors.incompletion) / 3;
+          const hasAcademicIssue = s.postScore < 70 || s.conceptualUnderstanding <= 2;
+          const hasBehaviorIssue = negAvg >= 2;
 
           return (
             <div key={s.id} className="glass-card rounded-xl p-5 animate-fade-in">
@@ -60,9 +80,17 @@ export default function AcademicPlans() {
                   <h4 className="font-semibold text-foreground">{s.name}</h4>
                   <span className={`text-xs font-bold ${getCategoryColor(cat)}`}>{cat}</span>
                 </div>
-                <div className="text-left">
-                  <p className="text-xs text-muted-foreground">أضعف مهارة</p>
-                  <p className="text-sm font-bold text-danger">{weakName}: {weakSkill[1]}%</p>
+                <div className="flex gap-2">
+                  {hasAcademicIssue && (
+                    <span className="text-xs font-bold px-2 py-1 rounded-full bg-muted text-danger flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3" /> ضعف أكاديمي
+                    </span>
+                  )}
+                  {hasBehaviorIssue && (
+                    <span className="text-xs font-bold px-2 py-1 rounded-full bg-muted text-warning flex items-center gap-1">
+                      <HeartPulse className="w-3 h-3" /> ضعف سلوكي
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -85,19 +113,75 @@ export default function AcademicPlans() {
                 })}
               </div>
 
-              {/* Recommendations */}
-              <div className="space-y-2">
-                <p className="text-xs font-semibold text-foreground">التوصيات التدريسية:</p>
-                {recs.map((r, i) => (
-                  <div key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
-                    <BookOpen className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
-                    <span>{r}</span>
+              {/* Behavior metrics */}
+              {hasBehaviorIssue && (
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-4 text-center text-xs">
+                  <div className="bg-muted/50 rounded-lg p-2">
+                    <p className="font-bold text-success">{s.positiveBehaviors.participation}</p>
+                    <p className="text-muted-foreground">مشاركة</p>
                   </div>
-                ))}
-              </div>
+                  <div className="bg-muted/50 rounded-lg p-2">
+                    <p className="font-bold text-success">{s.positiveBehaviors.cooperation}</p>
+                    <p className="text-muted-foreground">تعاون</p>
+                  </div>
+                  <div className="bg-muted/50 rounded-lg p-2">
+                    <p className="font-bold text-success">{s.positiveBehaviors.focus}</p>
+                    <p className="text-muted-foreground">تركيز</p>
+                  </div>
+                  <div className="bg-muted/50 rounded-lg p-2">
+                    <p className="font-bold text-danger">{s.negativeBehaviors.distraction}</p>
+                    <p className="text-muted-foreground">تشتيت</p>
+                  </div>
+                  <div className="bg-muted/50 rounded-lg p-2">
+                    <p className="font-bold text-danger">{s.negativeBehaviors.tardiness}</p>
+                    <p className="text-muted-foreground">تأخر</p>
+                  </div>
+                  <div className="bg-muted/50 rounded-lg p-2">
+                    <p className="font-bold text-danger">{s.negativeBehaviors.incompletion}</p>
+                    <p className="text-muted-foreground">عدم إنجاز</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Academic recommendations */}
+              {hasAcademicIssue && (
+                <div className="space-y-2 mb-3">
+                  <p className="text-xs font-semibold text-foreground flex items-center gap-1">
+                    <BookOpen className="w-3.5 h-3.5 text-primary" /> التوصيات الأكاديمية:
+                  </p>
+                  {academicRecs.map((r, i) => (
+                    <div key={i} className="flex items-start gap-2 text-xs text-muted-foreground mr-5">
+                      <span className="text-primary">•</span>
+                      <span>{r}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Behavioral recommendations */}
+              {hasBehaviorIssue && (
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-foreground flex items-center gap-1">
+                    <HeartPulse className="w-3.5 h-3.5 text-warning" /> التوصيات السلوكية:
+                  </p>
+                  {behaviorRecs.map((r, i) => (
+                    <div key={i} className="flex items-start gap-2 text-xs text-muted-foreground mr-5">
+                      <span className="text-warning">•</span>
+                      <span>{r}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           );
         })}
+
+        {allNeedingHelp.length === 0 && (
+          <div className="glass-card rounded-xl p-10 text-center">
+            <BookOpen className="w-10 h-10 text-success mx-auto mb-3" />
+            <p className="text-sm text-muted-foreground">جميع الطلاب بحالة جيدة أكاديمياً وسلوكياً</p>
+          </div>
+        )}
       </div>
     </div>
   );

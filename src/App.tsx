@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { StudentProvider } from "@/context/StudentContext";
 import AppLayout from "@/components/AppLayout";
 import Index from "./pages/Index";
 import Students from "./pages/Students";
@@ -20,20 +21,22 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
-        <AppLayout>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/students" element={<Students />} />
-            <Route path="/behavior" element={<BehaviorAnalysis />} />
-            <Route path="/academic" element={<AcademicAnalysis />} />
-            <Route path="/behavior-plans" element={<BehaviorPlans />} />
-            <Route path="/academic-plans" element={<AcademicPlans />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AppLayout>
-      </BrowserRouter>
+      <StudentProvider>
+        <BrowserRouter>
+          <AppLayout>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/students" element={<Students />} />
+              <Route path="/behavior" element={<BehaviorAnalysis />} />
+              <Route path="/academic" element={<AcademicAnalysis />} />
+              <Route path="/behavior-plans" element={<BehaviorPlans />} />
+              <Route path="/academic-plans" element={<AcademicPlans />} />
+              <Route path="/reports" element={<Reports />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AppLayout>
+        </BrowserRouter>
+      </StudentProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

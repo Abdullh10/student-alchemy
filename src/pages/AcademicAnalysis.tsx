@@ -1,10 +1,12 @@
-import { students } from "@/data/mockData";
+import { useStudents } from "@/context/StudentContext";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  LineChart, Line, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
+  LineChart, Line,
 } from "recharts";
 
 export default function AcademicAnalysis() {
+  const { students } = useStudents();
+
   const testData = students.map(s => ({
     name: s.name.split(" ")[0],
     "اختبار 1": s.testScores[0] || 0,
@@ -14,7 +16,7 @@ export default function AcademicAnalysis() {
 
   const assignmentAvg = students.map(s => ({
     name: s.name.split(" ")[0],
-    المتوسط: Math.round(s.assignmentScores.reduce((a, b) => a + b, 0) / s.assignmentScores.length),
+    المتوسط: Math.round(s.assignmentScores.reduce((a, b) => a + b, 0) / (s.assignmentScores.length || 1)),
   }));
 
   const skillsData = students.map(s => ({
@@ -24,7 +26,6 @@ export default function AcademicAnalysis() {
     تجارب: s.skills.experiments,
   }));
 
-  // Gap analysis
   const gaps = students.map(s => {
     const weakest = Object.entries(s.skills).sort(([, a], [, b]) => a - b)[0];
     const skillName = weakest[0] === "calculations" ? "الحسابات" : weakest[0] === "concepts" ? "المفاهيم" : "التجارب";
@@ -34,7 +35,6 @@ export default function AcademicAnalysis() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Test scores */}
         <div className="glass-card rounded-xl p-5">
           <h3 className="text-sm font-semibold text-foreground mb-4">نتائج الاختبارات</h3>
           <ResponsiveContainer width="100%" height={300}>
@@ -50,7 +50,6 @@ export default function AcademicAnalysis() {
           </ResponsiveContainer>
         </div>
 
-        {/* Assignment averages */}
         <div className="glass-card rounded-xl p-5">
           <h3 className="text-sm font-semibold text-foreground mb-4">متوسط درجات الواجبات</h3>
           <ResponsiveContainer width="100%" height={300}>
@@ -64,7 +63,6 @@ export default function AcademicAnalysis() {
           </ResponsiveContainer>
         </div>
 
-        {/* Skills radar per student */}
         <div className="glass-card rounded-xl p-5 lg:col-span-2">
           <h3 className="text-sm font-semibold text-foreground mb-4">المهارات الكيميائية لكل طالب</h3>
           <ResponsiveContainer width="100%" height={300}>
@@ -81,7 +79,6 @@ export default function AcademicAnalysis() {
         </div>
       </div>
 
-      {/* Learning gaps */}
       <div className="glass-card rounded-xl p-5">
         <h3 className="text-sm font-semibold text-foreground mb-4">الفجوات التعليمية المكتشفة</h3>
         {gaps.length > 0 ? (
