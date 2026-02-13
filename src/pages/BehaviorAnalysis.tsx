@@ -1,10 +1,12 @@
-import { students } from "@/data/mockData";
+import { useStudents } from "@/context/StudentContext";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
 } from "recharts";
 
 export default function BehaviorAnalysis() {
+  const { students } = useStudents();
+
   const behaviorData = students.map(s => ({
     name: s.name.split(" ")[0],
     مشاركة: s.positiveBehaviors.participation,
@@ -20,9 +22,9 @@ export default function BehaviorAnalysis() {
   }));
 
   const avgPositive = {
-    مشاركة: +(students.reduce((s, st) => s + st.positiveBehaviors.participation, 0) / students.length).toFixed(1),
-    تعاون: +(students.reduce((s, st) => s + st.positiveBehaviors.cooperation, 0) / students.length).toFixed(1),
-    تركيز: +(students.reduce((s, st) => s + st.positiveBehaviors.focus, 0) / students.length).toFixed(1),
+    مشاركة: +(students.reduce((s, st) => s + st.positiveBehaviors.participation, 0) / (students.length || 1)).toFixed(1),
+    تعاون: +(students.reduce((s, st) => s + st.positiveBehaviors.cooperation, 0) / (students.length || 1)).toFixed(1),
+    تركيز: +(students.reduce((s, st) => s + st.positiveBehaviors.focus, 0) / (students.length || 1)).toFixed(1),
   };
 
   const radarData = Object.entries(avgPositive).map(([key, val]) => ({
@@ -31,7 +33,6 @@ export default function BehaviorAnalysis() {
 
   return (
     <div className="space-y-6">
-      {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {Object.entries(avgPositive).map(([key, val]) => (
           <div key={key} className="glass-card rounded-xl p-5 text-center animate-fade-in">
@@ -43,7 +44,6 @@ export default function BehaviorAnalysis() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Positive behaviors */}
         <div className="glass-card rounded-xl p-5">
           <h3 className="text-sm font-semibold text-foreground mb-4">السلوكيات الإيجابية</h3>
           <ResponsiveContainer width="100%" height={300}>
@@ -59,7 +59,6 @@ export default function BehaviorAnalysis() {
           </ResponsiveContainer>
         </div>
 
-        {/* Negative behaviors */}
         <div className="glass-card rounded-xl p-5">
           <h3 className="text-sm font-semibold text-foreground mb-4">السلوكيات السلبية</h3>
           <ResponsiveContainer width="100%" height={300}>
@@ -75,7 +74,6 @@ export default function BehaviorAnalysis() {
           </ResponsiveContainer>
         </div>
 
-        {/* Radar */}
         <div className="glass-card rounded-xl p-5 lg:col-span-2">
           <h3 className="text-sm font-semibold text-foreground mb-4">متوسط السلوك الإيجابي للصف</h3>
           <ResponsiveContainer width="100%" height={300}>
@@ -89,7 +87,6 @@ export default function BehaviorAnalysis() {
         </div>
       </div>
 
-      {/* Per-student classification */}
       <div className="glass-card rounded-xl p-5">
         <h3 className="text-sm font-semibold text-foreground mb-4">التصنيف السلوكي التلقائي</h3>
         <div className="space-y-3">

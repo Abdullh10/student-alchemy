@@ -1,9 +1,11 @@
 import { useState } from "react";
-import { students, getStudentCategory, getCategoryColor, getBehaviorRecommendations, getAcademicRecommendations } from "@/data/mockData";
+import { useStudents } from "@/context/StudentContext";
+import { getStudentCategory, getCategoryColor, getBehaviorRecommendations, getAcademicRecommendations } from "@/data/mockData";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { FileText, Users as UsersIcon } from "lucide-react";
 
 export default function Reports() {
+  const { students } = useStudents();
   const [selectedStudent, setSelectedStudent] = useState<string | "all">("all");
 
   const comparisonData = students.map(s => ({
@@ -17,7 +19,6 @@ export default function Reports() {
 
   return (
     <div className="space-y-6">
-      {/* Selector */}
       <div className="glass-card rounded-xl p-5 flex flex-wrap items-center gap-3">
         <label className="text-sm font-semibold text-foreground">اختر نوع التقرير:</label>
         <select
@@ -33,7 +34,6 @@ export default function Reports() {
       </div>
 
       {selectedStudent === "all" ? (
-        /* Class report */
         <div className="space-y-6">
           <div className="glass-card rounded-xl p-5">
             <div className="flex items-center gap-2 mb-4">
@@ -46,7 +46,7 @@ export default function Reports() {
                 <p className="text-xs text-muted-foreground">عدد الطلاب</p>
               </div>
               <div className="bg-muted/50 rounded-lg p-3">
-                <p className="text-xl font-bold text-success">{Math.round(students.reduce((s, st) => s + st.postScore, 0) / students.length)}%</p>
+                <p className="text-xl font-bold text-success">{students.length ? Math.round(students.reduce((s, st) => s + st.postScore, 0) / students.length) : 0}%</p>
                 <p className="text-xs text-muted-foreground">متوسط التحصيل</p>
               </div>
               <div className="bg-muted/50 rounded-lg p-3">
@@ -71,7 +71,6 @@ export default function Reports() {
           </div>
         </div>
       ) : selected ? (
-        /* Individual report */
         <div className="space-y-4">
           <div className="glass-card rounded-xl p-5">
             <div className="flex items-center gap-2 mb-4">
@@ -106,7 +105,6 @@ export default function Reports() {
               </div>
             </div>
 
-            {/* Skills */}
             <h4 className="text-xs font-semibold text-foreground mb-2">المهارات الكيميائية:</h4>
             <div className="grid grid-cols-3 gap-3 mb-4">
               {Object.entries(selected.skills).map(([key, val]) => {
@@ -126,7 +124,6 @@ export default function Reports() {
               })}
             </div>
 
-            {/* Behavior */}
             <h4 className="text-xs font-semibold text-foreground mb-2">السلوك:</h4>
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-4 text-center text-xs">
               <div className="bg-muted/50 rounded-lg p-2">
@@ -155,7 +152,6 @@ export default function Reports() {
               </div>
             </div>
 
-            {/* Recommendations */}
             <h4 className="text-xs font-semibold text-foreground mb-2">التوصيات السلوكية:</h4>
             <ul className="text-xs text-muted-foreground space-y-1 mb-3">
               {getBehaviorRecommendations(selected).map((r, i) => <li key={i}>• {r}</li>)}

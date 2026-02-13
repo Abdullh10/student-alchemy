@@ -9,15 +9,17 @@ import {
   PieChart, Pie, Cell, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
 } from "recharts";
 import StatCard from "@/components/StatCard";
-import { students, getAverageScore, getAtRiskStudents, getStudentCategory, getCategoryColor } from "@/data/mockData";
+import { useStudents } from "@/context/StudentContext";
+import { getAverageScore, getAtRiskStudents, getStudentCategory, getCategoryColor } from "@/data/mockData";
 
 const COLORS = ["hsl(152,60%,40%)", "hsl(205,80%,50%)", "hsl(38,92%,50%)", "hsl(0,72%,55%)"];
 
 export default function Dashboard() {
+  const { students } = useStudents();
   const avg = getAverageScore(students);
   const atRisk = getAtRiskStudents(students);
   const improvement = Math.round(
-    students.reduce((sum, s) => sum + (s.postScore - s.preScore), 0) / students.length
+    students.reduce((sum, s) => sum + (s.postScore - s.preScore), 0) / (students.length || 1)
   );
 
   const categoryData = [
@@ -34,16 +36,15 @@ export default function Dashboard() {
   }));
 
   const avgSkills = {
-    الحسابات: Math.round(students.reduce((s, st) => s + st.skills.calculations, 0) / students.length),
-    المفاهيم: Math.round(students.reduce((s, st) => s + st.skills.concepts, 0) / students.length),
-    التجارب: Math.round(students.reduce((s, st) => s + st.skills.experiments, 0) / students.length),
+    الحسابات: Math.round(students.reduce((s, st) => s + st.skills.calculations, 0) / (students.length || 1)),
+    المفاهيم: Math.round(students.reduce((s, st) => s + st.skills.concepts, 0) / (students.length || 1)),
+    التجارب: Math.round(students.reduce((s, st) => s + st.skills.experiments, 0) / (students.length || 1)),
   };
 
   const radarData = Object.entries(avgSkills).map(([key, val]) => ({ subject: key, value: val, fullMark: 100 }));
 
   return (
     <div className="space-y-6">
-      {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard title="عدد الطلاب" value={students.length} subtitle="المسجلين في الصف" icon={Users} gradient="gradient-card-info" iconColor="bg-info/10 text-info" />
         <StatCard title="متوسط التحصيل" value={`${avg}%`} subtitle="بعد التدخل" icon={TrendingUp} gradient="gradient-card-success" iconColor="bg-success/10 text-success" />
@@ -52,7 +53,6 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Comparison chart */}
         <div className="glass-card rounded-xl p-5">
           <h3 className="text-sm font-semibold text-foreground mb-4">مقارنة الدرجات (قبل / بعد)</h3>
           <ResponsiveContainer width="100%" height={280}>
@@ -67,22 +67,18 @@ export default function Dashboard() {
           </ResponsiveContainer>
         </div>
 
-        {/* Category pie */}
         <div className="glass-card rounded-xl p-5">
           <h3 className="text-sm font-semibold text-foreground mb-4">تصنيف الطلاب</h3>
           <ResponsiveContainer width="100%" height={280}>
             <PieChart>
               <Pie data={categoryData} cx="50%" cy="50%" innerRadius={60} outerRadius={100} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
-                {categoryData.map((_, i) => (
-                  <Cell key={i} fill={COLORS[i]} />
-                ))}
+                {categoryData.map((_, i) => <Cell key={i} fill={COLORS[i]} />)}
               </Pie>
               <Tooltip />
             </PieChart>
           </ResponsiveContainer>
         </div>
 
-        {/* Radar */}
         <div className="glass-card rounded-xl p-5">
           <h3 className="text-sm font-semibold text-foreground mb-4">متوسط المهارات الكيميائية</h3>
           <ResponsiveContainer width="100%" height={280}>
@@ -95,10 +91,9 @@ export default function Dashboard() {
           </ResponsiveContainer>
         </div>
 
-        {/* At risk list */}
         <div className="glass-card rounded-xl p-5">
           <h3 className="text-sm font-semibold text-foreground mb-4">الطلاب المعرضون للخطر</h3>
-          <div className="space-y-3">
+          <div className="space-y-3 max-h-64 overflow-y-auto">
             {atRisk.map(s => {
               const cat = getStudentCategory(s);
               return (
