@@ -3,7 +3,8 @@ import { getStudentCategory, getCategoryColor, getAcademicRecommendations, getBe
 import { BookOpen, Lightbulb, FlaskConical, Calculator, AlertTriangle, HeartPulse } from "lucide-react";
 
 export default function AcademicPlans() {
-  const { students } = useStudents();
+  const { students, loading } = useStudents();
+  if (loading) return <div className="flex items-center justify-center p-12"><p className="text-muted-foreground">جاري تحميل البيانات...</p></div>;
 
   // Students needing academic help
   const needsAcademicHelp = students.filter(s => s.postScore < 70 || s.conceptualUnderstanding <= 2);

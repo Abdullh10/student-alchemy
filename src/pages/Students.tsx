@@ -9,11 +9,13 @@ import { Plus, Trash2, Edit, Save, X } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Students() {
-  const { students, addStudent, deleteStudent, updateScore, updateBehavior, updateSkill, updateStudent } = useStudents();
+  const { students, loading, addStudent, deleteStudent, updateScore, updateBehavior, updateSkill, updateStudent } = useStudents();
   const [newName, setNewName] = useState("");
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editData, setEditData] = useState<Record<string, any>>({});
+
+  if (loading) return <div className="flex items-center justify-center p-12"><p className="text-muted-foreground">جاري تحميل البيانات...</p></div>;
 
   const handleAdd = () => {
     const trimmed = newName.trim();

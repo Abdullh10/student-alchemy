@@ -5,8 +5,9 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { FileText, Users as UsersIcon } from "lucide-react";
 
 export default function Reports() {
-  const { students } = useStudents();
+  const { students, loading } = useStudents();
   const [selectedStudent, setSelectedStudent] = useState<string | "all">("all");
+  if (loading) return <div className="flex items-center justify-center p-12"><p className="text-muted-foreground">جاري تحميل البيانات...</p></div>;
 
   const comparisonData = students.map(s => ({
     name: s.name.split(" ")[0],

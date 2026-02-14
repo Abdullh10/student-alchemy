@@ -15,7 +15,8 @@ import { getAverageScore, getAtRiskStudents, getStudentCategory, getCategoryColo
 const COLORS = ["hsl(152,60%,40%)", "hsl(205,80%,50%)", "hsl(38,92%,50%)", "hsl(0,72%,55%)"];
 
 export default function Dashboard() {
-  const { students } = useStudents();
+  const { students, loading } = useStudents();
+  if (loading || students.length === 0) return <div className="flex items-center justify-center p-12"><p className="text-muted-foreground">جاري تحميل البيانات...</p></div>;
   const avg = getAverageScore(students);
   const atRisk = getAtRiskStudents(students);
   const improvement = Math.round(
