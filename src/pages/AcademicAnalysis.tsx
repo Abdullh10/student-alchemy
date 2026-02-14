@@ -5,7 +5,8 @@ import {
 } from "recharts";
 
 export default function AcademicAnalysis() {
-  const { students } = useStudents();
+  const { students, loading } = useStudents();
+  if (loading) return <div className="flex items-center justify-center p-12"><p className="text-muted-foreground">جاري تحميل البيانات...</p></div>;
 
   const testData = students.map(s => ({
     name: s.name.split(" ")[0],

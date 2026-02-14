@@ -3,7 +3,8 @@ import { getStudentCategory, getCategoryColor, getBehaviorRecommendations } from
 import { CheckCircle2, AlertCircle, Clock } from "lucide-react";
 
 export default function BehaviorPlans() {
-  const { students } = useStudents();
+  const { students, loading } = useStudents();
+  if (loading) return <div className="flex items-center justify-center p-12"><p className="text-muted-foreground">جاري تحميل البيانات...</p></div>;
 
   const needsIntervention = students.filter(s => {
     const negAvg = (s.negativeBehaviors.distraction + s.negativeBehaviors.tardiness + s.negativeBehaviors.incompletion) / 3;
