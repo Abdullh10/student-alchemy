@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { students as initialStudents, type Student } from "@/data/mockData";
+import { students as initialStudents, generateWeeklyScores, weekTotal, type Student, type WeekScore } from "@/data/mockData";
 import { toast } from "sonner";
 
 interface StudentContextType {
