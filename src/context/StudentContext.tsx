@@ -49,6 +49,7 @@ function dbToStudent(row: any): Student {
     },
     assignmentScores: row.assignment_scores || [0, 0, 0, 0, 0],
     testScores: row.test_scores || [0, 0, 0],
+    weeklyScores: Array.isArray(row.weekly_scores) ? row.weekly_scores : [],
   };
 }
 
