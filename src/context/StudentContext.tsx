@@ -121,6 +121,7 @@ export function StudentProvider({ children }: { children: ReactNode }) {
       skills: { calculations: 0, concepts: 0, experiments: 0 },
       assignmentScores: [0, 0, 0, 0, 0],
       testScores: [0, 0, 0],
+      weeklyScores: generateWeeklyScores(name),
     });
     const { data, error } = await supabase.from("students" as any).insert(newStudent).select().single();
     if (error) {
