@@ -216,8 +216,27 @@ export function StudentProvider({ children }: { children: ReactNode }) {
     setStudents(prev => prev.map(s => s.id === id ? { ...s, [field]: value } : s));
   }, []);
 
+  const updateWeekScore = useCallback(async (id: string, week: number, field: keyof Omit<WeekScore, "week">, value: number) => {
+    let newWeekly: WeekScore[] | null = null;
+    let newPost = 0;
+    setStudents(prev => prev.map(s => {
+      if (s.id !== id) return s;
+      const wk = s.weeklyScores.map(w => w.week === week ? { ...w, [field]: value } : w);
+      newWeekly = wk;
+      const last = wk[wk.length - 1];
+      newPost = Math.round(weekTotal(last) * 100 / 60);
+      return { ...s, weeklyScores: wk, postScore: newPost };
+    }));
+    if (newWeekly) {
+      const { error } = await supabase.from("students" as any)
+        .update({ weekly_scores: newWeekly, post_score: newPost })
+        .eq("id", id);
+      if (error) toast.error("خطأ في تحديث درجة الأسبوع");
+    }
+  }, []);
+
   return (
-    <StudentContext.Provider value={{ students, loading, addStudent, deleteStudent, updateStudent, updateBehavior, updateSkill, updateScore }}>
+    <StudentContext.Provider value={{ students, loading, addStudent, deleteStudent, updateStudent, updateBehavior, updateSkill, updateScore, updateWeekScore }}>
       {children}
     </StudentContext.Provider>
   );
