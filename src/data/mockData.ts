@@ -1,3 +1,13 @@
+export interface WeekScore {
+  week: number;
+  participation: number; // /10
+  activities: number;    // /10
+  research: number;      // /10
+  homework: number;      // /10
+  written: number;       // /15
+  practical: number;     // /5
+}
+
 export interface Student {
   id: string;
   name: string;
@@ -22,9 +32,77 @@ export interface Student {
   };
   assignmentScores: number[];
   testScores: number[];
+  weeklyScores: WeekScore[];
 }
 
 export type StudentCategory = 'متفوق' | 'مستقر' | 'يحتاج متابعة' | 'يحتاج تدخل عاجل';
+export type ProgressCategory = 'تحسن جيد' | 'تحسن بسيط' | 'انخفاض حاد';
+
+export const SLOW_IMPROVERS = new Set<string>([
+  "تميم بن هايس بن مذود النماصي الشمري",
+  "حمد بن محمد بن علي الغاوي",
+  "سلطان بن سليم بن خلف المضيبري الرشيدي",
+  "عبدالاله بن عمربن رياض بن الجيرودي",
+  "عبدالله بن محمد بن ظافر العمري",
+  "علي بن سعيد بن علي الشهراني",
+  "محمد بن مبارك بن محمد اليامي",
+  "مهند بن علي بن صالح المقبول",
+]);
+
+export const SHARP_DECLINE = new Set<string>([
+  "راشد بن ماجد بن محمد ابوعشبه",
+  "سعود بن وادي بن هدمول الشمري",
+  "يزن بن سلطان بن مناع البعيجي",
+]);
+
+export function getProgressCategory(name: string): ProgressCategory {
+  if (SHARP_DECLINE.has(name)) return 'انخفاض حاد';
+  if (SLOW_IMPROVERS.has(name)) return 'تحسن بسيط';
+  return 'تحسن جيد';
+}
+
+export function weekTotal(w: WeekScore): number {
+  return w.participation + w.activities + w.research + w.homework + w.written + w.practical;
+}
+
+// Deterministic per-name PRNG so weekly data is stable across reloads
+function hashSeed(s: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return Math.abs(h) || 1;
+}
+
+export function generateWeeklyScores(name: string): WeekScore[] {
+  let seed = hashSeed(name);
+  const rnd = () => {
+    seed = (seed * 16807) % 2147483647;
+    return (seed - 1) / 2147483646;
+  };
+  const clamp = (v: number, mn: number, mx: number) => Math.max(mn, Math.min(mx, v));
+  const cat = getProgressCategory(name);
+  let start: number, end: number;
+  if (cat === 'تحسن جيد') { start = 0.55 + rnd() * 0.15; end = clamp(start + 0.20 + rnd() * 0.15, 0, 0.98); }
+  else if (cat === 'تحسن بسيط') { start = 0.40 + rnd() * 0.15; end = clamp(start + 0.21 + rnd() * 0.03, 0, 0.95); }
+  else { start = 0.55 + rnd() * 0.10; end = clamp(start - (0.25 + rnd() * 0.15), 0.05, 1); }
+  const weeks: WeekScore[] = [];
+  for (let w = 0; w < 15; w++) {
+    const t = w / 14;
+    const p = clamp(start + (end - start) * t + (rnd() - 0.5) * 0.08, 0, 1);
+    weeks.push({
+      week: w + 1,
+      participation: clamp(Math.round(p * 10 + (rnd() - 0.5) * 1.5), 0, 10),
+      activities: clamp(Math.round(p * 10 + (rnd() - 0.5) * 1.5), 0, 10),
+      research: clamp(Math.round(p * 10 + (rnd() - 0.5) * 1.5), 0, 10),
+      homework: clamp(Math.round(p * 10 + (rnd() - 0.5) * 1.5), 0, 10),
+      written: clamp(Math.round(p * 15 + (rnd() - 0.5) * 2), 0, 15),
+      practical: clamp(Math.round(p * 5 + (rnd() - 0.5) * 1), 0, 5),
+    });
+  }
+  return weeks;
+}
 
 export function getStudentCategory(student: Student): StudentCategory {
   const avg = (student.preScore + student.postScore) / 2;
