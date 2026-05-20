@@ -253,7 +253,6 @@ export function StudentProvider({ children }: { children: ReactNode }) {
         })
         .eq("id", id);
       if (error) toast.error("خطأ في حفظ التعديل");
-      else toast.success("تم الحفظ");
     }
   }, []);
 
