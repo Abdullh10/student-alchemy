@@ -252,11 +252,15 @@ export const students: Student[] = studentNames.map((name, i) => {
   // Derive interaction level from positive percentage
   const interactionLevel = b ? cap(Math.round(b.positivePercent / 20), 1, 5) : sr(1, 5);
 
+  const weekly = generateWeeklyScores(name);
+  const w1 = weekly[0], w15 = weekly[14];
+  const pre = Math.round(weekTotal(w1) * 100 / 60);
+  const post = Math.round(weekTotal(w15) * 100 / 60);
   return {
     id: String(i + 1),
     name,
-    preScore: sr(25, 75),
-    postScore: sr(35, 95),
+    preScore: pre,
+    postScore: post,
     interactionLevel,
     conceptualUnderstanding: sr(1, 5),
     positiveBehaviors: { participation, cooperation, focus },
@@ -268,6 +272,7 @@ export const students: Student[] = studentNames.map((name, i) => {
     },
     assignmentScores: Array.from({ length: 5 }, () => sr(20, 100)),
     testScores: Array.from({ length: 3 }, () => sr(20, 100)),
+    weeklyScores: weekly,
   };
 });
 
