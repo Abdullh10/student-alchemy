@@ -1,0 +1,1 @@
+ALTER TABLE public.students ADD COLUMN IF NOT EXISTS weekly_scores jsonb NOT NULL DEFAULT '[]'::jsonb;
