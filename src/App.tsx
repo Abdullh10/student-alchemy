@@ -12,6 +12,7 @@ import AcademicAnalysis from "./pages/AcademicAnalysis";
 import BehaviorPlans from "./pages/BehaviorPlans";
 import AcademicPlans from "./pages/AcademicPlans";
 import Reports from "./pages/Reports";
+import WeeklyProgress from "./pages/WeeklyProgress";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
