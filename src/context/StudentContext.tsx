@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { students as initialStudents, type Student } from "@/data/mockData";
+import { students as initialStudents, generateWeeklyScores, weekTotal, type Student, type WeekScore } from "@/data/mockData";
 import { toast } from "sonner";
 
 interface StudentContextType {
@@ -12,6 +12,7 @@ interface StudentContextType {
   updateBehavior: (id: string, field: string, value: number) => void;
   updateSkill: (id: string, field: string, value: number) => void;
   updateScore: (id: string, field: "preScore" | "postScore", value: number) => void;
+  updateWeekScore: (id: string, week: number, field: keyof Omit<WeekScore, "week">, value: number) => void;
 }
 
 const StudentContext = createContext<StudentContextType | null>(null);
@@ -48,6 +49,7 @@ function dbToStudent(row: any): Student {
     },
     assignmentScores: row.assignment_scores || [0, 0, 0, 0, 0],
     testScores: row.test_scores || [0, 0, 0],
+    weeklyScores: Array.isArray(row.weekly_scores) ? row.weekly_scores : [],
   };
 }
 
@@ -70,6 +72,7 @@ function studentToDb(s: Student) {
     experiments: s.skills.experiments,
     assignment_scores: s.assignmentScores,
     test_scores: s.testScores,
+    weekly_scores: s.weeklyScores,
   };
 }
 
@@ -88,9 +91,26 @@ export function StudentProvider({ children }: { children: ReactNode }) {
         return;
       }
       if (data && data.length > 0) {
-        setStudents(data.map(dbToStudent));
+        let loaded = data.map(dbToStudent);
+        // Backfill: any student with empty weeklyScores → generate and persist
+        const missing = loaded.filter(s => !s.weeklyScores || s.weeklyScores.length === 0);
+        if (missing.length > 0) {
+          await Promise.all(missing.map(async (s) => {
+            const weekly = generateWeeklyScores(s.name);
+            const w1 = weekly[0], w15 = weekly[14];
+            const pre = Math.round(weekTotal(w1) * 100 / 60);
+            const post = Math.round(weekTotal(w15) * 100 / 60);
+            await supabase.from("students" as any).update({
+              weekly_scores: weekly, pre_score: pre, post_score: post,
+            }).eq("id", s.id);
+            s.weeklyScores = weekly;
+            s.preScore = pre;
+            s.postScore = post;
+          }));
+          loaded = [...loaded];
+        }
+        setStudents(loaded);
       } else {
-        // Seed with initial data
         const inserts = initialStudents.map(studentToDb);
         const { data: seeded, error: seedError } = await supabase.from("students" as any).insert(inserts).select();
         if (seedError) {
@@ -118,6 +138,7 @@ export function StudentProvider({ children }: { children: ReactNode }) {
       skills: { calculations: 0, concepts: 0, experiments: 0 },
       assignmentScores: [0, 0, 0, 0, 0],
       testScores: [0, 0, 0],
+      weeklyScores: generateWeeklyScores(name),
     });
     const { data, error } = await supabase.from("students" as any).insert(newStudent).select().single();
     if (error) {
@@ -195,8 +216,27 @@ export function StudentProvider({ children }: { children: ReactNode }) {
     setStudents(prev => prev.map(s => s.id === id ? { ...s, [field]: value } : s));
   }, []);
 
+  const updateWeekScore = useCallback(async (id: string, week: number, field: keyof Omit<WeekScore, "week">, value: number) => {
+    let newWeekly: WeekScore[] | null = null;
+    let newPost = 0;
+    setStudents(prev => prev.map(s => {
+      if (s.id !== id) return s;
+      const wk = s.weeklyScores.map(w => w.week === week ? { ...w, [field]: value } : w);
+      newWeekly = wk;
+      const last = wk[wk.length - 1];
+      newPost = Math.round(weekTotal(last) * 100 / 60);
+      return { ...s, weeklyScores: wk, postScore: newPost };
+    }));
+    if (newWeekly) {
+      const { error } = await supabase.from("students" as any)
+        .update({ weekly_scores: newWeekly, post_score: newPost })
+        .eq("id", id);
+      if (error) toast.error("خطأ في تحديث درجة الأسبوع");
+    }
+  }, []);
+
   return (
-    <StudentContext.Provider value={{ students, loading, addStudent, deleteStudent, updateStudent, updateBehavior, updateSkill, updateScore }}>
+    <StudentContext.Provider value={{ students, loading, addStudent, deleteStudent, updateStudent, updateBehavior, updateSkill, updateScore, updateWeekScore }}>
       {children}
     </StudentContext.Provider>
   );

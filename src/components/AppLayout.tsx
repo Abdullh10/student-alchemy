@@ -11,6 +11,7 @@ import {
   Menu,
   X,
   FlaskConical,
+  LineChart,
 } from "lucide-react";
 
 const navItems = [
@@ -18,6 +19,7 @@ const navItems = [
   { title: "بيانات الطلاب", url: "/students", icon: Users },
   { title: "التحليل السلوكي", url: "/behavior", icon: Brain },
   { title: "التحليل الأكاديمي", url: "/academic", icon: GraduationCap },
+  { title: "التطور الأسبوعي", url: "/weekly", icon: LineChart },
   { title: "الخطط العلاجية السلوكية", url: "/behavior-plans", icon: HeartPulse },
   { title: "الخطط العلاجية الأكاديمية", url: "/academic-plans", icon: BookOpen },
   { title: "التقارير", url: "/reports", icon: FileText },

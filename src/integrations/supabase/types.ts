@@ -35,6 +35,7 @@ export type Database = {
           tardiness: number
           test_scores: number[]
           updated_at: string
+          weekly_scores: Json
         }
         Insert: {
           assignment_scores?: number[]
@@ -56,6 +57,7 @@ export type Database = {
           tardiness?: number
           test_scores?: number[]
           updated_at?: string
+          weekly_scores?: Json
         }
         Update: {
           assignment_scores?: number[]
@@ -77,6 +79,7 @@ export type Database = {
           tardiness?: number
           test_scores?: number[]
           updated_at?: string
+          weekly_scores?: Json
         }
         Relationships: []
       }

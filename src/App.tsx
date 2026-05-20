@@ -12,6 +12,7 @@ import AcademicAnalysis from "./pages/AcademicAnalysis";
 import BehaviorPlans from "./pages/BehaviorPlans";
 import AcademicPlans from "./pages/AcademicPlans";
 import Reports from "./pages/Reports";
+import WeeklyProgress from "./pages/WeeklyProgress";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
               <Route path="/behavior-plans" element={<BehaviorPlans />} />
               <Route path="/academic-plans" element={<AcademicPlans />} />
               <Route path="/reports" element={<Reports />} />
+              <Route path="/weekly" element={<WeeklyProgress />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AppLayout>
