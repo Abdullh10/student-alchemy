@@ -12,6 +12,7 @@ interface StudentContextType {
   updateBehavior: (id: string, field: string, value: number) => void;
   updateSkill: (id: string, field: string, value: number) => void;
   updateScore: (id: string, field: "preScore" | "postScore", value: number) => void;
+  updateWeekScore: (id: string, week: number, field: keyof Omit<WeekScore, "week">, value: number) => void;
 }
 
 const StudentContext = createContext<StudentContextType | null>(null);
