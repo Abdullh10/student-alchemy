@@ -91,9 +91,26 @@ export function StudentProvider({ children }: { children: ReactNode }) {
         return;
       }
       if (data && data.length > 0) {
-        setStudents(data.map(dbToStudent));
+        let loaded = data.map(dbToStudent);
+        // Backfill: any student with empty weeklyScores → generate and persist
+        const missing = loaded.filter(s => !s.weeklyScores || s.weeklyScores.length === 0);
+        if (missing.length > 0) {
+          await Promise.all(missing.map(async (s) => {
+            const weekly = generateWeeklyScores(s.name);
+            const w1 = weekly[0], w15 = weekly[14];
+            const pre = Math.round(weekTotal(w1) * 100 / 60);
+            const post = Math.round(weekTotal(w15) * 100 / 60);
+            await supabase.from("students" as any).update({
+              weekly_scores: weekly, pre_score: pre, post_score: post,
+            }).eq("id", s.id);
+            s.weeklyScores = weekly;
+            s.preScore = pre;
+            s.postScore = post;
+          }));
+          loaded = [...loaded];
+        }
+        setStudents(loaded);
       } else {
-        // Seed with initial data
         const inserts = initialStudents.map(studentToDb);
         const { data: seeded, error: seedError } = await supabase.from("students" as any).insert(inserts).select();
         if (seedError) {
