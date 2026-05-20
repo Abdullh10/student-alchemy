@@ -72,6 +72,7 @@ function studentToDb(s: Student) {
     experiments: s.skills.experiments,
     assignment_scores: s.assignmentScores,
     test_scores: s.testScores,
+    weekly_scores: s.weeklyScores,
   };
 }
 
