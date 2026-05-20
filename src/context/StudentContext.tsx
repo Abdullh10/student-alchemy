@@ -218,20 +218,42 @@ export function StudentProvider({ children }: { children: ReactNode }) {
 
   const updateWeekScore = useCallback(async (id: string, week: number, field: keyof Omit<WeekScore, "week">, value: number) => {
     let newWeekly: WeekScore[] | null = null;
-    let newPost = 0;
+    let newPre = 0, newPost = 0;
+    let newCalc = 0, newConcepts = 0, newExperiments = 0;
     setStudents(prev => prev.map(s => {
       if (s.id !== id) return s;
       const wk = s.weeklyScores.map(w => w.week === week ? { ...w, [field]: value } : w);
       newWeekly = wk;
-      const last = wk[wk.length - 1];
+      const first = wk[0], last = wk[wk.length - 1];
+      newPre = Math.round(weekTotal(first) * 100 / 60);
       newPost = Math.round(weekTotal(last) * 100 / 60);
-      return { ...s, weeklyScores: wk, postScore: newPost };
+      // Derive skill indicators from cumulative averages so all charts reflect edits
+      const avg = (sel: (w: WeekScore) => number, max: number) =>
+        Math.round((wk.reduce((a, w) => a + sel(w), 0) / wk.length) * 100 / max);
+      newCalc = avg(w => w.written, 15);             // التقويم التحريري ≈ الحسابات/المفاهيم النظرية
+      newConcepts = avg(w => w.homework + w.research, 20); // الواجبات والبحوث ≈ المفاهيم
+      newExperiments = avg(w => w.practical + w.activities, 15); // العملي + الأنشطة ≈ التجارب
+      return {
+        ...s,
+        weeklyScores: wk,
+        preScore: newPre,
+        postScore: newPost,
+        skills: { calculations: newCalc, concepts: newConcepts, experiments: newExperiments },
+      };
     }));
     if (newWeekly) {
       const { error } = await supabase.from("students" as any)
-        .update({ weekly_scores: newWeekly, post_score: newPost })
+        .update({
+          weekly_scores: newWeekly,
+          pre_score: newPre,
+          post_score: newPost,
+          calculations: newCalc,
+          concepts: newConcepts,
+          experiments: newExperiments,
+        })
         .eq("id", id);
-      if (error) toast.error("خطأ في تحديث درجة الأسبوع");
+      if (error) toast.error("خطأ في حفظ التعديل");
+      else toast.success("تم الحفظ");
     }
   }, []);
 
