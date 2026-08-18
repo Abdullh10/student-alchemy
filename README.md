@@ -1,73 +1,39 @@
-# Welcome to your Lovable project
+# كشف المتابعة الذكي
 
-## Project info
+نظام كشف متابعة إلكتروني أكاديمي وسلوكي للمعلمين — شعب وطلاب، ملاحظات ونقاط بأسلوب ClassDojo، موازنة تلقائية للنقاط إلى درجات حسب أوزان يحددها المعلم، شارات تحفيزية تُمنح تلقائيًا، وتقارير قابلة للطباعة والتصدير (Excel / PDF عبر الطباعة).
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## التقنيات
 
-## How can I edit this code?
+- Vite + React + TypeScript
+- Tailwind CSS + shadcn-ui (دعم كامل لـ RTL والوضع الليلي)
+- Supabase (Postgres + Auth + Storage) مع عزل بيانات كل معلم عبر Row Level Security
+- TanStack Query لإدارة حالة البيانات
+- SheetJS (xlsx) للاستيراد والتصدير
 
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+## التشغيل محليًا
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
 npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## إعداد قاعدة البيانات (مطلوب قبل أول استخدام)
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+هذا المستودع يحتوي على ملفات SQL الخاصة بقاعدة البيانات ضمن `supabase/migrations/`، لكنها **لا تُطبَّق تلقائيًا**. يجب تطبيقها يدويًا مرة واحدة على مشروع Supabase المرتبط:
 
-**Use GitHub Codespaces**
+1. افتح لوحة تحكم مشروعك في Supabase → SQL Editor.
+2. انسخ محتوى كل ملف من `supabase/migrations/` بالترتيب الزمني لاسم الملف، ونفّذه:
+   - `20260818060000_teacher_tracking_platform.sql` (الجداول والصلاحيات الأساسية)
+   - `20260818060500_avatars_storage.sql` (تخزين الصور الشخصية)
+3. تأكد من تفعيل **Email Auth** في Authentication → Providers.
+4. (اختياري) عطّل "Confirm email" أثناء التطوير لتسريع التسجيل التجريبي.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+بعد ذلك، عند تسجيل أول معلم، يُنشأ ملفه الشخصي تلقائيًا، ويُهيَّأ نظام تقييم افتراضي (معايير أكاديمية/سلوكية، أنواع ملاحظات، شارات) يمكنه تعديله بالكامل من صفحة الإعدادات.
 
-## What technologies are used for this project?
+## البنية
 
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+- `src/pages` — صفحات النظام (لوحة التحكم، الشعب، كشف المتابعة، ملف الطالب، الإعدادات، التقارير، الشارات)
+- `src/hooks` — طبقة الوصول للبيانات عبر React Query
+- `src/lib/grading.ts` — محرك الموازنة (تحويل النقاط إلى درجات حسب الأوزان)
+- `src/lib/badges.ts` — منطق منح الشارات تلقائيًا
+- `supabase/migrations` — مخطط قاعدة البيانات وسياسات RLS
