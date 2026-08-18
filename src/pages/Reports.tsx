@@ -1,169 +1,218 @@
-import { useState } from "react";
-import { useStudents } from "@/context/StudentContext";
-import { getStudentCategory, getCategoryColor, getBehaviorRecommendations, getAcademicRecommendations } from "@/data/mockData";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { FileText, Users as UsersIcon } from "lucide-react";
+import { useMemo, useState } from "react";
+import { FileSpreadsheet, Printer } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { format } from "date-fns";
+import { ar } from "date-fns/locale";
+import { useClasses } from "@/hooks/useClasses";
+import { useGradeSummaries } from "@/hooks/useGradeSummaries";
+import { exportRowsToExcel, printReport } from "@/lib/exporters";
+import type { NoteCategory } from "@/types/domain";
 
 export default function Reports() {
-  const { students, loading } = useStudents();
-  const [selectedStudent, setSelectedStudent] = useState<string | "all">("all");
-  if (loading) return <div className="flex items-center justify-center p-12"><p className="text-muted-foreground">جاري تحميل البيانات...</p></div>;
+  const { data: classes = [] } = useClasses();
+  const { students, notes, summaries } = useGradeSummaries();
 
-  const comparisonData = students.map(s => ({
-    name: s.name.split(" ")[0],
-    قبل: s.preScore,
-    بعد: s.postScore,
-    تحسن: s.postScore - s.preScore,
-  }));
+  const [classFilter, setClassFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState<"all" | NoteCategory>("all");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
 
-  const selected = students.find(s => s.id === selectedStudent);
+  const classesById = new Map(classes.map((c) => [c.id, c]));
+
+  const filteredStudents = useMemo(
+    () => students.filter((s) => classFilter === "all" || s.class_id === classFilter),
+    [students, classFilter]
+  );
+
+  const filteredNotes = useMemo(() => {
+    return notes.filter((n) => {
+      if (classFilter !== "all" && n.class_id !== classFilter) return false;
+      if (categoryFilter !== "all" && n.category !== categoryFilter) return false;
+      if (from && new Date(n.occurred_at) < new Date(from)) return false;
+      if (to && new Date(n.occurred_at) > new Date(`${to}T23:59:59`)) return false;
+      return true;
+    });
+  }, [notes, classFilter, categoryFilter, from, to]);
+
+  const pct = (studentId: string) => {
+    const s = summaries.get(studentId);
+    if (!s || s.finalMax <= 0) return 0;
+    return Math.round((s.finalScore / s.finalMax) * 100);
+  };
+
+  const ranked = [...filteredStudents].sort((a, b) => pct(b.id) - pct(a.id));
+
+  const studentsById = new Map(students.map((s) => [s.id, s]));
+
+  const exportClassSheet = () => {
+    const rows = filteredStudents.map((s) => {
+      const sum = summaries.get(s.id);
+      return {
+        "الاسم": s.name,
+        "الشعبة": classesById.get(s.class_id ?? "")?.name ?? "",
+        "أكاديمي": sum ? `${sum.academicScore}/${sum.academicMax}` : "",
+        "سلوكي": sum ? `${sum.behaviorScore}/${sum.behaviorMax}` : "",
+        "النهائية": sum ? `${sum.finalScore}/${sum.finalMax}` : "",
+        "النسبة": `${pct(s.id)}%`,
+      };
+    });
+    if (rows.length) exportRowsToExcel("تقرير_كشف_المتابعة", "الكشف", rows);
+  };
+
+  const exportNotes = () => {
+    const rows = filteredNotes.map((n) => ({
+      "الطالب": studentsById.get(n.student_id)?.name ?? "",
+      "النوع": n.type_name,
+      "القسم": n.category === "academic" ? "أكاديمي" : "سلوكي",
+      "النقاط": n.points,
+      "ملاحظة": n.comment ?? "",
+      "التاريخ": format(new Date(n.occurred_at), "yyyy-MM-dd HH:mm"),
+    }));
+    if (rows.length) exportRowsToExcel("تقرير_الملاحظات", "الملاحظات", rows);
+  };
 
   return (
     <div className="space-y-6">
-      <div className="glass-card rounded-xl p-5 flex flex-wrap items-center gap-3">
-        <label className="text-sm font-semibold text-foreground">اختر نوع التقرير:</label>
-        <select
-          value={selectedStudent}
-          onChange={e => setSelectedStudent(e.target.value)}
-          className="rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-ring"
-        >
-          <option value="all">تقرير الصف الكامل</option>
-          {students.map(s => (
-            <option key={s.id} value={s.id}>تقرير: {s.name}</option>
-          ))}
-        </select>
+      <div>
+        <h1 className="text-xl font-bold text-foreground">التقارير</h1>
+        <p className="text-sm text-muted-foreground mt-1">صدّر أو اطبع تقارير كشف المتابعة والملاحظات</p>
       </div>
 
-      {selectedStudent === "all" ? (
-        <div className="space-y-6">
-          <div className="glass-card rounded-xl p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <UsersIcon className="w-5 h-5 text-primary" />
-              <h3 className="text-sm font-semibold text-foreground">تقرير الصف الكامل</h3>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6 text-center">
-              <div className="bg-muted/50 rounded-lg p-3">
-                <p className="text-xl font-bold text-foreground">{students.length}</p>
-                <p className="text-xs text-muted-foreground">عدد الطلاب</p>
-              </div>
-              <div className="bg-muted/50 rounded-lg p-3">
-                <p className="text-xl font-bold text-success">{students.length ? Math.round(students.reduce((s, st) => s + st.postScore, 0) / students.length) : 0}%</p>
-                <p className="text-xs text-muted-foreground">متوسط التحصيل</p>
-              </div>
-              <div className="bg-muted/50 rounded-lg p-3">
-                <p className="text-xl font-bold text-info">{students.filter(s => getStudentCategory(s) === "متفوق").length}</p>
-                <p className="text-xs text-muted-foreground">متفوقون</p>
-              </div>
-              <div className="bg-muted/50 rounded-lg p-3">
-                <p className="text-xl font-bold text-danger">{students.filter(s => getStudentCategory(s) === "يحتاج تدخل عاجل").length}</p>
-                <p className="text-xs text-muted-foreground">يحتاجون تدخل</p>
-              </div>
-            </div>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={comparisonData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(195,20%,88%)" />
-                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Bar dataKey="قبل" fill="hsl(205,80%,70%)" radius={[3, 3, 0, 0]} />
-                <Bar dataKey="بعد" fill="hsl(174,62%,38%)" radius={[3, 3, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+      <Card className="print:hidden">
+        <CardContent className="p-4 grid sm:grid-cols-4 gap-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs">الشعبة</Label>
+            <Select value={classFilter} onValueChange={setClassFilter}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">كل الشعب</SelectItem>
+                {classes.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
-        </div>
-      ) : selected ? (
-        <div className="space-y-4">
-          <div className="glass-card rounded-xl p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <FileText className="w-5 h-5 text-primary" />
-              <h3 className="text-sm font-semibold text-foreground">تقرير فردي: {selected.name}</h3>
-            </div>
-            <div className="flex items-center gap-2 mb-4">
-              <span className="text-xs text-muted-foreground">التصنيف:</span>
-              <span className={`text-sm font-bold ${getCategoryColor(getStudentCategory(selected))}`}>
-                {getStudentCategory(selected)}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6 text-center">
-              <div className="bg-muted/50 rounded-lg p-3">
-                <p className="text-xl font-bold text-muted-foreground">{selected.preScore}%</p>
-                <p className="text-xs text-muted-foreground">قبل</p>
-              </div>
-              <div className="bg-muted/50 rounded-lg p-3">
-                <p className="text-xl font-bold text-primary">{selected.postScore}%</p>
-                <p className="text-xs text-muted-foreground">بعد</p>
-              </div>
-              <div className="bg-muted/50 rounded-lg p-3">
-                <p className={`text-xl font-bold ${selected.postScore - selected.preScore > 0 ? "text-success" : "text-danger"}`}>
-                  {selected.postScore - selected.preScore > 0 ? "+" : ""}{selected.postScore - selected.preScore}
-                </p>
-                <p className="text-xs text-muted-foreground">التحسن</p>
-              </div>
-              <div className="bg-muted/50 rounded-lg p-3">
-                <p className="text-xl font-bold text-foreground">{selected.interactionLevel}/5</p>
-                <p className="text-xs text-muted-foreground">التفاعل</p>
-              </div>
-            </div>
-
-            <h4 className="text-xs font-semibold text-foreground mb-2">المهارات الكيميائية:</h4>
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              {Object.entries(selected.skills).map(([key, val]) => {
-                const label = key === "calculations" ? "الحسابات" : key === "concepts" ? "المفاهيم" : "التجارب";
-                const color = val >= 70 ? "bg-success" : val >= 50 ? "bg-warning" : "bg-danger";
-                return (
-                  <div key={key}>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-muted-foreground">{label}</span>
-                      <span className="font-medium text-foreground">{val}%</span>
-                    </div>
-                    <div className="h-2 bg-muted rounded-full overflow-hidden">
-                      <div className={`h-full rounded-full ${color}`} style={{ width: `${val}%` }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <h4 className="text-xs font-semibold text-foreground mb-2">السلوك:</h4>
-            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-4 text-center text-xs">
-              <div className="bg-muted/50 rounded-lg p-2">
-                <p className="font-bold text-success">{selected.positiveBehaviors.participation}</p>
-                <p className="text-muted-foreground">مشاركة</p>
-              </div>
-              <div className="bg-muted/50 rounded-lg p-2">
-                <p className="font-bold text-success">{selected.positiveBehaviors.cooperation}</p>
-                <p className="text-muted-foreground">تعاون</p>
-              </div>
-              <div className="bg-muted/50 rounded-lg p-2">
-                <p className="font-bold text-success">{selected.positiveBehaviors.focus}</p>
-                <p className="text-muted-foreground">تركيز</p>
-              </div>
-              <div className="bg-muted/50 rounded-lg p-2">
-                <p className="font-bold text-danger">{selected.negativeBehaviors.distraction}</p>
-                <p className="text-muted-foreground">تشتيت</p>
-              </div>
-              <div className="bg-muted/50 rounded-lg p-2">
-                <p className="font-bold text-danger">{selected.negativeBehaviors.tardiness}</p>
-                <p className="text-muted-foreground">تأخر</p>
-              </div>
-              <div className="bg-muted/50 rounded-lg p-2">
-                <p className="font-bold text-danger">{selected.negativeBehaviors.incompletion}</p>
-                <p className="text-muted-foreground">عدم إنجاز</p>
-              </div>
-            </div>
-
-            <h4 className="text-xs font-semibold text-foreground mb-2">التوصيات السلوكية:</h4>
-            <ul className="text-xs text-muted-foreground space-y-1 mb-3">
-              {getBehaviorRecommendations(selected).map((r, i) => <li key={i}>• {r}</li>)}
-            </ul>
-            <h4 className="text-xs font-semibold text-foreground mb-2">التوصيات الأكاديمية:</h4>
-            <ul className="text-xs text-muted-foreground space-y-1">
-              {getAcademicRecommendations(selected).map((r, i) => <li key={i}>• {r}</li>)}
-            </ul>
+          <div className="space-y-1.5">
+            <Label className="text-xs">القسم</Label>
+            <Select value={categoryFilter} onValueChange={(v) => setCategoryFilter(v as "all" | NoteCategory)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">الكل</SelectItem>
+                <SelectItem value="academic">أكاديمي</SelectItem>
+                <SelectItem value="behavioral">سلوكي</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">من تاريخ</Label>
+            <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">إلى تاريخ</Label>
+            <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Tabs defaultValue="sheet">
+        <div className="flex items-center justify-between flex-wrap gap-2 print:hidden">
+          <TabsList>
+            <TabsTrigger value="sheet">كشف المتابعة</TabsTrigger>
+            <TabsTrigger value="notes">الملاحظات</TabsTrigger>
+            <TabsTrigger value="ranking">الأعلى والأدنى</TabsTrigger>
+          </TabsList>
+          <Button variant="outline" size="sm" onClick={printReport}><Printer className="w-4 h-4 ml-1" /> طباعة / PDF</Button>
         </div>
-      ) : null}
+
+        <TabsContent value="sheet" className="mt-4">
+          <Card className="print-area">
+            <CardContent className="p-0">
+              <div className="p-4 flex items-center justify-between">
+                <h2 className="font-bold">كشف المتابعة {classFilter !== "all" ? `— ${classesById.get(classFilter)?.name}` : "— جميع الشعب"}</h2>
+                <Button variant="outline" size="sm" onClick={exportClassSheet} className="print:hidden"><FileSpreadsheet className="w-4 h-4 ml-1" /> Excel</Button>
+              </div>
+              <ReportTable
+                rows={filteredStudents.map((s) => {
+                  const sum = summaries.get(s.id);
+                  return [
+                    s.name,
+                    classesById.get(s.class_id ?? "")?.name ?? "—",
+                    sum ? `${sum.academicScore}/${sum.academicMax}` : "—",
+                    sum ? `${sum.behaviorScore}/${sum.behaviorMax}` : "—",
+                    sum ? `${sum.finalScore}/${sum.finalMax}` : "—",
+                    `${pct(s.id)}%`,
+                  ];
+                })}
+                headers={["الطالب", "الشعبة", "أكاديمي", "سلوكي", "النهائية", "النسبة"]}
+                empty="لا يوجد طلاب مطابقون للفلاتر"
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="notes" className="mt-4">
+          <Card className="print-area">
+            <CardContent className="p-0">
+              <div className="p-4 flex items-center justify-between">
+                <h2 className="font-bold">تقرير الملاحظات ({filteredNotes.length})</h2>
+                <Button variant="outline" size="sm" onClick={exportNotes} className="print:hidden"><FileSpreadsheet className="w-4 h-4 ml-1" /> Excel</Button>
+              </div>
+              <ReportTable
+                rows={filteredNotes.map((n) => [
+                  studentsById.get(n.student_id)?.name ?? "—",
+                  n.type_name,
+                  n.category === "academic" ? "أكاديمي" : "سلوكي",
+                  n.points > 0 ? `+${n.points}` : `${n.points}`,
+                  format(new Date(n.occurred_at), "d MMM yyyy, HH:mm", { locale: ar }),
+                ])}
+                headers={["الطالب", "الملاحظة", "القسم", "النقاط", "التاريخ"]}
+                empty="لا توجد ملاحظات مطابقة للفلاتر"
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="ranking" className="mt-4">
+          <Card className="print-area">
+            <CardContent className="p-0">
+              <h2 className="font-bold p-4">ترتيب الطلاب حسب الدرجة النهائية</h2>
+              <ReportTable
+                rows={ranked.map((s, i) => [
+                  `${i + 1}`,
+                  s.name,
+                  classesById.get(s.class_id ?? "")?.name ?? "—",
+                  `${pct(s.id)}%`,
+                ])}
+                headers={["#", "الطالب", "الشعبة", "النسبة"]}
+                empty="لا يوجد طلاب مطابقون للفلاتر"
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+function ReportTable({ headers, rows, empty }: { headers: string[]; rows: (string | number)[][]; empty: string }) {
+  if (rows.length === 0) return <p className="text-center text-muted-foreground py-12">{empty}</p>;
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead className="bg-muted/40 text-muted-foreground">
+          <tr>{headers.map((h) => <th key={h} className="text-right p-3 font-medium">{h}</th>)}</tr>
+        </thead>
+        <tbody>
+          {rows.map((row, i) => (
+            <tr key={i} className="border-t border-border">
+              {row.map((cell, j) => <td key={j} className="p-3">{cell}</td>)}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
